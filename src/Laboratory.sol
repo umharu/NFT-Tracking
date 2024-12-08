@@ -102,4 +102,58 @@ contract Laboratory is ReentrancyGuard, Ownable, ERC721URIStorage {
         }
 
 
+
+    function makeDrug(
+
+            string memory uri, 
+            uint _price,
+            uint _product_code,
+            uint _creation_date, // <-- Este valor tiene que ser proporcionado en segundos desde la fecha que se emitio
+            uint _calculated_expiration_date, // <- Este valor depende de "creation_date" y se le tiene que sumar en segundos para calcular la fecha de vencimiento
+            string memory _laboratory_name,
+            int _latitude,
+            int _longitude,
+            int _decimals
+            )
+                public
+                nonReentrant  //  <== Modificadores de funciones
+                onlyOwner
+            {
+                require(_price > 0, PriceCannotBeZero());
+                require(_product_code > 0, InitialValuesCannotBeInvalid());
+                require(_creation_date > 0, InitialValuesCannotBeInvalid());
+                require(_calculated_expiration_date > 0, InitialValuesCannotBeInvalid());
+                require(bytes(_laboratory_name).length > 0, InitialValuesCannotBeInvalid());
+
+                drugs_count++;
+                _safeMint(msg.sender, drugs_count);
+                _setTokenURI(drugs_count, uri);
+
+
+                ItemProperties storage newDrug = Drugs[drugs_count];
+
+                newDrug.tokenId = drugs_count;
+                newDrug.price = _price;
+                newDrug.product_code = _product_code;
+                newDrug.creation_date = _creation_date;
+                newDrug.expiration_date = _creation_date + _calculated_expiration_date;
+                newDrug.entity_name = _laboratory_name;
+                newDrug.owners_history.push(msg.sender);
+                newDrug.coordinate_history.push(Coordinates({
+                    latitude: _latitude,
+                    longitude: _longitude,
+                    decimals: _decimals
+                }));
+
+                current_owner = payable(msg.sender);
+
+                emit ItemCreated(
+                    drugs_count,
+                    msg.sender,
+                    _price,
+                    _laboratory_name,
+                    block.timestamp
+                );
+            }
+
 }
