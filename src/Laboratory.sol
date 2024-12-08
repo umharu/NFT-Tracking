@@ -156,4 +156,98 @@ contract Laboratory is ReentrancyGuard, Ownable, ERC721URIStorage {
                 );
             }
 
+
+    function changeOwner(
+
+        uint _tokenId, 
+        string memory _newEntity, 
+        int _newLatitude,
+        int _newLongitude,
+        int _newDecimals
+    ) 
+        external 
+        payable       // <==  Modificadores de funciones
+        nonReentrant 
+    {
+
+        address old_owner = ownerOf(_tokenId);
+
+        ItemProperties storage item = Drugs[_tokenId];
+
+        require(_tokenId > 0 && _tokenId <= drugs_count, ErrorWhenChangingOwner());
+        require(msg.value >= item.price, InsufficientBalanceToChange());
+        require(item.creation_date + item.expiration_date < block.timestamp, ExpiredDrug());
+
+        current_owner.transfer(msg.value);
+
+        current_owner = payable(msg.sender);
+        
+        transferFrom(old_owner, msg.sender, _tokenId);
+
+
+        item.owners_history.push(msg.sender);
+        item.coordinate_history.push(Coordinates({
+            latitude: _newLatitude,
+            longitude: _newLongitude,
+            decimals: _newDecimals
+        }));
+
+        item.entity_name = _newEntity;
+        
+
+        emit SoldItem (
+            _tokenId,
+            old_owner,
+            current_owner,
+            item.price,
+            _newEntity,
+            block.timestamp
+        );
+    }
+
+
+    // Esta funcion es para cambiar el precio del NFT pero solo lo puede ejecutar el propietario actual.
+    function changePriceDrug(uint256 _newPrice, uint256 _tokenId) external onlyCurrentOwner(_tokenId) {
+        Drugs[_tokenId].price = _newPrice;
+    }
+
+
+
+    // Funcion para obtener el historial de los propietarios.
+    function getOwnersHistory(uint _tokenId) public view returns (address[] memory) {
+        return Drugs[_tokenId].owners_history;
+    }
+
+    function getLocationHistory(uint _tokenId) public view returns (Coordinates[] memory) {
+        return Drugs[_tokenId].coordinate_history;
+    }
+
+
+
+
+    // Funcion generica para chequear el owner del contracto
+    function checkOwner() view external onlyOwner returns (bool) {
+        return true;
+    }
+
+
+
+
+    // Apartir de aqui son las funciones comunes necesarias para la gestion del NFT
+    // Hay que adaptarlas a la logica que se necesita.
+
+
+    // Sobrescribir supportsInterface
+    function supportsInterface(bytes4 interfaceId) public view   override ( ERC721URIStorage) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+
+
+    // Sobrescribir tokenURI
+    function tokenURI(uint256 tokenId) public view  override( ERC721URIStorage) returns (string memory) {
+        return super.tokenURI(tokenId);
+    }
+
+
+
 }
