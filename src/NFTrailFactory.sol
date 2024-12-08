@@ -20,7 +20,7 @@ contract NFTrailFactory is Ownable{
 
 
     constructor() Ownable(msg.sender) {
-        feePercent = 1000000000000000000;
+        feePercent = 50000000000000000;
         feeAccount = payable(msg.sender);
     }
 
