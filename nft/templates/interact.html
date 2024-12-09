@@ -1,0 +1,122 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFT Tracker INFO</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="main-header">
+        <div class="container">
+            <h1 class="logo">Smart Contract INFO</h1>
+            <nav class="nav-menu">
+                <ul>
+                    <li><a href="{% url 'index' %}">Inicio</a></li>
+                    <li><a href="#">Acerca</a></li>
+                    <li><a href="#">Servicios</a></li>
+                    <li><a href="#">Contacto</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <section class="contract-details">
+            <div class="container">
+                <h2>Detalles del Contrato</h2>
+                <p><strong>Dirección del Contrato:</strong> {{ contract_address }}</p>
+            </div>
+        </section>
+
+        <section class="owner-history">
+            <div class="container">
+                <h2>Historial de Propietarios</h2>
+                {% if owner_history %}
+                    <ul>
+                        {% for owner in owner_history %}
+                            <li>{{ owner }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No hay historial de propietarios disponible.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Wallet Connection Info -->
+        <section class="wallet-info" style="display: none;">
+            <div class="container">
+                <h3>Wallet Conectada</h3>
+                <p>Dirección: <span id="wallet-address"></span></p>
+                <p>Balance: <span id="wallet-balance"></span></p>
+            </div>
+        </section>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="container">
+                <h2>Interacción con Smart Contract</h2>
+                <p>Conéctate a tu wallet y visualiza los detalles del contrato en la red Arbitrum.</p>
+                <a href="#" class="btn-primary" id="connect-wallet">Conectar Wallet</a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="container">
+            <p>&copy; 2024 NFT Tracker. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Web3 Integration Script -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const connectButton = document.getElementById('connect-wallet');
+            const walletInfoSection = document.querySelector('.wallet-info');
+            const walletAddressSpan = document.getElementById('wallet-address');
+            const walletBalanceSpan = document.getElementById('wallet-balance');
+
+            async function connectWallet() {
+                if (window.ethereum) {
+                    try {
+                        // Request account access
+                        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                        const web3 = new Web3(window.ethereum);
+                        
+                        // Get the first account
+                        const account = accounts[0];
+                        
+                        // Get balance
+                        const balance = await web3.eth.getBalance(account);
+                        const balanceInEther = web3.utils.fromWei(balance, 'ether');
+
+                        // Update UI
+                        walletAddressSpan.textContent = account;
+                        walletBalanceSpan.textContent = `${parseFloat(balanceInEther).toFixed(4)} ETH`;
+                        
+                        walletInfoSection.style.display = 'block';
+                        connectButton.textContent = 'Wallet Conectada';
+                        connectButton.disabled = true;
+
+                    } catch (error) {
+                        console.error("Error connecting to wallet", error);
+                        alert('Error al conectar la wallet');
+                    }
+                } else {
+                    alert('Por favor, instala MetaMask');
+                }
+            }
+
+            connectButton.addEventListener('click', connectWallet);
+        });
+    </script>
+</body>
+</html>
