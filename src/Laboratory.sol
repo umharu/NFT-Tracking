@@ -11,6 +11,7 @@ import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/
 
 
 
+
 contract Laboratory is ReentrancyGuard, Ownable, ERC721URIStorage {
 
 
@@ -35,10 +36,11 @@ contract Laboratory is ReentrancyGuard, Ownable, ERC721URIStorage {
     */
 
     struct Coordinates {
-        int256 latitude;
-        int256 longitude;
-        int256 decimals;
+        int256 latitude;   // -34702785
+        int256 longitude;  //  -58729012
+        int256 decimals;   //   6
     }
+
 
     // Estructura del NFT vinculado al medicamento.
     struct ItemProperties{
@@ -51,6 +53,8 @@ contract Laboratory is ReentrancyGuard, Ownable, ERC721URIStorage {
         address[] owners_history;
         Coordinates[] coordinate_history;
     }
+
+
 
     mapping(uint => ItemProperties) public Drugs;
 
@@ -79,6 +83,7 @@ contract Laboratory is ReentrancyGuard, Ownable, ERC721URIStorage {
     error ErrorWhenChangingOwner();
     error InsufficientBalanceToChange();
     error OnlyOwnerCanChangeThePrice();
+    error ExpiredDrug();
 
 
 
@@ -103,108 +108,114 @@ contract Laboratory is ReentrancyGuard, Ownable, ERC721URIStorage {
 
 
 
+
+
     function makeDrug(
 
-            string memory uri, 
-            uint _price,
-            uint _product_code,
-            uint _creation_date, // <-- Este valor tiene que ser proporcionado en segundos desde la fecha que se emitio
-            uint _calculated_expiration_date, // <- Este valor depende de "creation_date" y se le tiene que sumar en segundos para calcular la fecha de vencimiento
-            string memory _laboratory_name,
-            int _latitude,
-            int _longitude,
-            int _decimals
-            )
-                public
-                nonReentrant  //  <== Modificadores de funciones
-                onlyOwner
-            {
-                require(_price > 0, PriceCannotBeZero());
-                require(_product_code > 0, InitialValuesCannotBeInvalid());
-                require(_creation_date > 0, InitialValuesCannotBeInvalid());
-                require(_calculated_expiration_date > 0, InitialValuesCannotBeInvalid());
-                require(bytes(_laboratory_name).length > 0, InitialValuesCannotBeInvalid());
+        string memory uri, 
+        uint _price,
+        uint _product_code,
+        uint _creation_date, // <-- Este valor tiene que ser proporcionado en segundos desde la fecha que se emitio
+        uint _calculated_expiration_date, // <- Este valor depende de "creation_date" y se le tiene que sumar en segundos para calcular la fecha de vencimiento
+        string memory _laboratory_name,
+        int _latitude,
+        int _longitude,
+        int _decimals
+        )
+            public
+            nonReentrant  //  <== Modificadores de funciones
+            onlyOwner
+        {
+            require(_price > 0, PriceCannotBeZero());
+            require(_product_code > 0, InitialValuesCannotBeInvalid());
+            require(_creation_date > 0, InitialValuesCannotBeInvalid());
+            require(_calculated_expiration_date > 0, InitialValuesCannotBeInvalid());
+            require(bytes(_laboratory_name).length > 0, InitialValuesCannotBeInvalid());
 
-                drugs_count++;
-                _safeMint(msg.sender, drugs_count);
-                _setTokenURI(drugs_count, uri);
+            drugs_count++;
+            _safeMint(msg.sender, drugs_count);
+            _setTokenURI(drugs_count, uri);
 
 
-                ItemProperties storage newDrug = Drugs[drugs_count];
+            ItemProperties storage newDrug = Drugs[drugs_count];
 
-                newDrug.tokenId = drugs_count;
-                newDrug.price = _price;
-                newDrug.product_code = _product_code;
-                newDrug.creation_date = _creation_date;
-                newDrug.expiration_date = _creation_date + _calculated_expiration_date;
-                newDrug.entity_name = _laboratory_name;
-                newDrug.owners_history.push(msg.sender);
-                newDrug.coordinate_history.push(Coordinates({
-                    latitude: _latitude,
-                    longitude: _longitude,
-                    decimals: _decimals
-                }));
+            newDrug.tokenId = drugs_count;
+            newDrug.price = _price;
+            newDrug.product_code = _product_code;
+            newDrug.creation_date = _creation_date;
+            newDrug.expiration_date = _creation_date + _calculated_expiration_date;
+            newDrug.entity_name = _laboratory_name;
+            newDrug.owners_history.push(msg.sender);
+            newDrug.coordinate_history.push(Coordinates({
+                latitude: _latitude,
+                longitude: _longitude,
+                decimals: _decimals
+            }));
 
-                current_owner = payable(msg.sender);
+            current_owner = payable(msg.sender);
 
-                emit ItemCreated(
-                    drugs_count,
-                    msg.sender,
-                    _price,
-                    _laboratory_name,
-                    block.timestamp
-                );
-            }
+            emit ItemCreated(
+                drugs_count,
+                msg.sender,
+                _price,
+                _laboratory_name,
+                block.timestamp
+            );
+        }
+
 
 
     function changeOwner(
 
-        uint _tokenId, 
-        string memory _newEntity, 
-        int _newLatitude,
-        int _newLongitude,
-        int _newDecimals
-    ) 
-        external 
-        payable       // <==  Modificadores de funciones
-        nonReentrant 
-    {
+            uint _tokenId, 
+            string memory _newEntity, 
+            int _newLatitude,
+            int _newLongitude,
+            int _newDecimals
+        ) 
+            external 
+            payable       // <==  Modificadores de funciones
+            nonReentrant 
+        {
 
-        address old_owner = ownerOf(_tokenId);
+            address old_owner = ownerOf(_tokenId);
 
-        ItemProperties storage item = Drugs[_tokenId];
+            ItemProperties storage item = Drugs[_tokenId];
 
-        require(_tokenId > 0 && _tokenId <= drugs_count, ErrorWhenChangingOwner());
-        require(msg.value >= item.price, InsufficientBalanceToChange());
-        require(item.creation_date + item.expiration_date < block.timestamp, ExpiredDrug());
+            require(_tokenId > 0 && _tokenId <= drugs_count, ErrorWhenChangingOwner());
+            require(msg.value >= item.price, InsufficientBalanceToChange());
 
-        current_owner.transfer(msg.value);
+            transferFrom(old_owner, msg.sender, _tokenId);
 
-        current_owner = payable(msg.sender);
-        
-        transferFrom(old_owner, msg.sender, _tokenId);
+            address payable previous_owner = current_owner;
+            current_owner = payable(msg.sender);
+
+            previous_owner.transfer(msg.value);
+
+            item.owners_history.push(msg.sender);
+            item.coordinate_history.push(Coordinates({
+                latitude: _newLatitude,
+                longitude: _newLongitude,
+                decimals: _newDecimals
+            }));
+
+            item.entity_name = _newEntity;
+            
+
+            emit SoldItem (
+                _tokenId,
+                old_owner,
+                current_owner,
+                item.price,
+                _newEntity,
+                block.timestamp
+            );
+        }
 
 
-        item.owners_history.push(msg.sender);
-        item.coordinate_history.push(Coordinates({
-            latitude: _newLatitude,
-            longitude: _newLongitude,
-            decimals: _newDecimals
-        }));
-
-        item.entity_name = _newEntity;
-        
-
-        emit SoldItem (
-            _tokenId,
-            old_owner,
-            current_owner,
-            item.price,
-            _newEntity,
-            block.timestamp
-        );
+    function DrugsReturn(uint _tokenId) public view returns (ItemProperties memory) {
+        return Drugs[_tokenId];
     }
-
 
     // Esta funcion es para cambiar el precio del NFT pero solo lo puede ejecutar el propietario actual.
     function changePriceDrug(uint256 _newPrice, uint256 _tokenId) external onlyCurrentOwner(_tokenId) {
@@ -247,7 +258,5 @@ contract Laboratory is ReentrancyGuard, Ownable, ERC721URIStorage {
     function tokenURI(uint256 tokenId) public view  override( ERC721URIStorage) returns (string memory) {
         return super.tokenURI(tokenId);
     }
-
-
 
 }

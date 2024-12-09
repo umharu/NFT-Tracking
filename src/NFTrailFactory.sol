@@ -50,7 +50,3 @@ contract NFTrailFactory is Ownable{
 
 
 }
-
-
-// Contract address =  0x642679449A2FBD295432bBD5a7691E412491A190
-
