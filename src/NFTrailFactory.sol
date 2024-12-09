@@ -2,10 +2,10 @@
 pragma solidity ^0.8.28;
 
 
-import "openzeppelin-contracts/token/ERC721/IERC721.sol";
-import "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
-import "openzeppelin-contracts/contracts/access/Ownable.sol";
-import "./Laboratory.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import "contracts/Laboratory.sol";
 
 
 
